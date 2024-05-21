@@ -61,14 +61,14 @@ function ExcelSorter() {
           //記入内容がある && 値が1以上
           if (cell && cell.v >= 1) {
             //データを取得
-            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;// C列（日付）
+            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;    // C列（日付）
             const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;// D列（乗車駅名）
             const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;// F列（降車駅名）
             const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;// G列（片道・往復）
             const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;// H列（通勤・業務）
             const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;// I列（目的地）
             const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;// J列（使用交通機関）
-            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;// K列（金額）
+            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;  // K列（金額）
 
             //データが記入されているか判定
             if (!c_Date || !d_SStation || !f_EStation || !g_TripType || !h_ExpenseTypes || !i_Destinations || !j_TransportType || !k_Money) {
@@ -140,7 +140,6 @@ function ExcelSorter() {
         }
 
         /* 通勤費判定 */
-
         //「全体 / ルート数」が出勤日数の半分以上あるかどうか
         if ((commutingEntries.length / typeEntries.length) >= Math.floor(expenseTypes.length / 2)) {
 
