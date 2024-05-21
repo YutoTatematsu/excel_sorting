@@ -40,6 +40,7 @@ function ExcelSorter() {
         const worksheet = workbook.Sheets[sheetName];
         const range = XLSX.utils.decode_range(worksheet['!ref']);
 
+        //データ配列
         let dates = [];
         let boardingStations = [];
         let alightingStations = [];
@@ -63,54 +64,78 @@ function ExcelSorter() {
           if (cell && cell.v >= 1) {
 
             //データを取得
-            const cData = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;// C列
-            const dData = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;// D列
-            const fData = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;// F列
-            const gData = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;// G列
-            const hData = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;// H列
-            const iData = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;// I列
-            const jData = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;// J列
-            const kData = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;// K列
+            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;// C列（日付）
+            const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;// D列（乗車駅名）
+            const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;// F列（降車駅名）
+            const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;// G列（片道・往復）
+            const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;// H列（通勤・業務）
+            const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;// I列（目的地）
+            const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;// J列（使用交通機関）
+            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;// K列（金額）
 
             //データが記入されているか判定
-            if (!cData || !dData || !fData || !gData || !hData || !iData || !jData || !kData) {
-              console.log(cellAddress + "にて終了" + cData + " " + dData + " " + fData + " " + gData + " " + hData + " " + iData + " " + jData + " " + kData);
+            if (!c_Date || !d_SStation || !f_EStation || !g_TripType || !h_ExpenseTypes || !i_Destinations || !j_TransportType || !k_Money) {
+              console.log(cellAddress + "にて終了" + c_Date + " " + d_SStation + " " + f_EStation + " " + g_TripType + " " + h_ExpenseTypes + " " + i_Destinations + " " + j_TransportType + " " + k_Money);
               break;
             }
 
             //データを追加
-            dates.push(cData);
-            boardingStations.push(dData);
-            alightingStations.push(fData);
-            tripTypes.push(gData);
-            expenseTypes.push(hData);
-            destinations.push(iData);
-            transportTypes.push(jData);
-            amounts.push(kData);
+            dates.push(c_Date);
+            boardingStations.push(d_SStation);
+            alightingStations.push(f_EStation);
+            tripTypes.push(g_TripType);
+            expenseTypes.push(h_ExpenseTypes);
+            destinations.push(i_Destinations);
+            transportTypes.push(j_TransportType);
+            amounts.push(k_Money);
 
             //通勤費の判定に使うので別途記録
-            if (hData === '通勤費') {
+            if (h_ExpenseTypes === '通勤費') {
               //追加
               commutingEntries.push({
-                date: cData,
-                boardingStation: dData,
-                alightingStation: fData,
-                tripType: gData,
-                expenseType: hData,
-                destination: iData,
-                transportType: jData,
-                amount: kData
+                date: c_Date,
+                boardingStation: d_SStation,
+                alightingStation: f_EStation,
+                tripType: g_TripType,
+                expenseType: h_ExpenseTypes,
+                destination: i_Destinations,
+                transportType: j_TransportType,
+                amount: k_Money
               });
             }
           }
         }
 
         //通勤費の判定（現状：1行で収まるかつ同じ区間である場合のみ　複数未対応「バス」「電車」）
-        if (commutingEntries.length >= Math.floor(expenseTypes.length / 2) &&//出勤日の半数か判定
-          commutingEntries.every(entry => entry.boardingStation === commutingEntries[0].boardingStation)//すべてのデータが同じか判定
-        ) {
-          //完全に同じ経路を使用している
-          status = 'OK';
+        //出勤日の半数か判定
+        if (commutingEntries.length >= Math.floor(expenseTypes.length / 2)) {
+
+          commutingEntries.forEach(entry => console.log(`乗った駅${entry.boardingStation}`));
+          commutingEntries.forEach(entry => console.log(`降りた駅${entry.alightingStation}`));
+          commutingEntries.forEach(entry => console.log(`${entry.tripType}`));
+          commutingEntries.forEach(entry => console.log(`${entry.expenseType}`));
+          commutingEntries.forEach(entry => console.log(`目的地${entry.destination}`));
+          commutingEntries.forEach(entry => console.log(`使用交通機関${entry.transportType}`));
+          commutingEntries.forEach(entry => console.log(`${entry.amount}円`));
+
+          //一つの交通機関を用いて出勤している（バスのみ・電車のみ・タクシーのみ）
+          if (
+            commutingEntries.every(entry => entry.boardingStation === commutingEntries[0].boardingStation) &&
+            commutingEntries.every(entry => entry.alightingStation === commutingEntries[0].alightingStation) &&
+            commutingEntries.every(entry => entry.tripType === commutingEntries[0].tripType) &&
+            commutingEntries.every(entry => entry.expenseType === commutingEntries[0].expenseType) &&
+            commutingEntries.every(entry => entry.destination === commutingEntries[0].destination) &&
+            commutingEntries.every(entry => entry.transportType === commutingEntries[0].transportType) &&
+            commutingEntries.every(entry => entry.amount === commutingEntries[0].amount)) {
+
+            console.log("処理開始" + commutingEntries.length + " " + Math.floor(expenseTypes.length / 2));
+
+
+            status = 'OK';
+          }
+          else {
+            status = '問題あり';
+          }
         } else {
           status = '問題あり';
         }
@@ -169,14 +194,14 @@ function ExcelSorter() {
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Boarding Station</th>
-                    <th>Alighting Station</th>
-                    <th>Trip Type</th>
-                    <th>Expense Type</th>
-                    <th>Destination</th>
-                    <th>Transport Type</th>
-                    <th>Amount</th>
+                    <th>日付</th>
+                    <th>乗車駅</th>
+                    <th>降車駅</th>
+                    <th>片道・往復</th>
+                    <th>通勤・業務</th>
+                    <th>目的地</th>
+                    <th>交通機関種類</th>
+                    <th>金額</th>
                   </tr>
                 </thead>
                 <tbody>
