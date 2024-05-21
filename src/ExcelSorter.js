@@ -50,19 +50,16 @@ function ExcelSorter() {
         let transportTypes = [];
         let amounts = [];
         let status = 'OK';
-        let commutingEntries = [];
+        let commutingEntries = [];//通勤費をまとめる変数
+        let typeEntries = [[], []]; //通勤費の交通経路を記録する2次元配列（初期値として2つの空配列）
 
         //データの取得
         for (let row = range.s.r; row <= range.e.r; row++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: 1 }); // B列のセル（B1という表示）
           const cell = worksheet[cellAddress]; // B列のセルの記入内容
 
-          // //B列が存在する || B列の値が1以上かどうか
-          // console.log((cell ? cell.v : "null") + " " + cellAddress);
-
           //記入内容がある && 値が1以上
           if (cell && cell.v >= 1) {
-
             //データを取得
             const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;// C列（日付）
             const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;// D列（乗車駅名）
@@ -75,7 +72,6 @@ function ExcelSorter() {
 
             //データが記入されているか判定
             if (!c_Date || !d_SStation || !f_EStation || !g_TripType || !h_ExpenseTypes || !i_Destinations || !j_TransportType || !k_Money) {
-              console.log(cellAddress + "にて終了" + c_Date + " " + d_SStation + " " + f_EStation + " " + g_TripType + " " + h_ExpenseTypes + " " + i_Destinations + " " + j_TransportType + " " + k_Money);
               break;
             }
 
@@ -91,7 +87,44 @@ function ExcelSorter() {
 
             //通勤費の判定に使うので別途記録
             if (h_ExpenseTypes === '通勤費') {
-              //追加
+              let found = false;
+
+              for (let i = 0; i < typeEntries.length; i++) {
+                if (
+                  typeEntries[i].length === 0 ||
+                  (typeEntries[i][0].transportType === j_TransportType &&
+                    typeEntries[i][0].boardingStation === d_SStation &&
+                    typeEntries[i][0].alightingStation === f_EStation)
+                ) {
+                  typeEntries[i].push({
+                    date: c_Date,
+                    boardingStation: d_SStation,
+                    alightingStation: f_EStation,
+                    tripType: g_TripType,
+                    expenseType: h_ExpenseTypes,
+                    destination: i_Destinations,
+                    transportType: j_TransportType,
+                    amount: k_Money
+                  });
+                  found = true;
+                  break;
+                }
+              }
+
+              if (!found) {
+                typeEntries.push([{
+                  date: c_Date,
+                  boardingStation: d_SStation,
+                  alightingStation: f_EStation,
+                  tripType: g_TripType,
+                  expenseType: h_ExpenseTypes,
+                  destination: i_Destinations,
+                  transportType: j_TransportType,
+                  amount: k_Money
+                }]);
+              }
+
+              //通勤費すべての配列に追加
               commutingEntries.push({
                 date: c_Date,
                 boardingStation: d_SStation,
@@ -106,34 +139,15 @@ function ExcelSorter() {
           }
         }
 
-        //通勤費の判定（現状：1行で収まるかつ同じ区間である場合のみ　複数未対応「バス」「電車」）
-        //出勤日の半数か判定
-        if (commutingEntries.length >= Math.floor(expenseTypes.length / 2)) {
+        /* 通勤費判定 */
 
-          commutingEntries.forEach(entry => console.log(`乗った駅${entry.boardingStation}`));
-          commutingEntries.forEach(entry => console.log(`降りた駅${entry.alightingStation}`));
-          commutingEntries.forEach(entry => console.log(`${entry.tripType}`));
-          commutingEntries.forEach(entry => console.log(`${entry.expenseType}`));
-          commutingEntries.forEach(entry => console.log(`目的地${entry.destination}`));
-          commutingEntries.forEach(entry => console.log(`使用交通機関${entry.transportType}`));
-          commutingEntries.forEach(entry => console.log(`${entry.amount}円`));
+        //「全体 / ルート数」が出勤日数の半分以上あるかどうか
+        if ((commutingEntries.length / typeEntries.length) >= Math.floor(expenseTypes.length / 2)) {
 
-          //一つの交通機関を用いて出勤している（バスのみ・電車のみ・タクシーのみ）
-          if (
-            commutingEntries.every(entry => entry.boardingStation === commutingEntries[0].boardingStation) &&
-            commutingEntries.every(entry => entry.alightingStation === commutingEntries[0].alightingStation) &&
-            commutingEntries.every(entry => entry.tripType === commutingEntries[0].tripType) &&
-            commutingEntries.every(entry => entry.expenseType === commutingEntries[0].expenseType) &&
-            commutingEntries.every(entry => entry.destination === commutingEntries[0].destination) &&
-            commutingEntries.every(entry => entry.transportType === commutingEntries[0].transportType) &&
-            commutingEntries.every(entry => entry.amount === commutingEntries[0].amount)) {
-
-            console.log("処理開始" + commutingEntries.length + " " + Math.floor(expenseTypes.length / 2));
-
-
+          //同じルート内の項目に変化がないか
+          if (typeEntries.every(route => allRouteEqualCheck(route))) {
             status = 'OK';
-          }
-          else {
+          } else {
             status = '問題あり';
           }
         } else {
@@ -161,6 +175,24 @@ function ExcelSorter() {
     newFiles.splice(index, 1);
     setFiles(newFiles);
   };
+
+  /** 配列内のすべての項目が同じ場合trueを返す
+   * @param {通勤ルート配列} array 
+   * @returns 
+   */
+  const allRouteEqualCheck = (array) => {
+    if (
+      array.every(entry => entry.boardingStation === array[0].boardingStation) &&
+      array.every(entry => entry.alightingStation === array[0].alightingStation) &&
+      array.every(entry => entry.tripType === array[0].tripType) &&
+      array.every(entry => entry.expenseType === array[0].expenseType) &&
+      array.every(entry => entry.destination === array[0].destination) &&
+      array.every(entry => entry.transportType === array[0].transportType) &&
+      array.every(entry => entry.amount === array[0].amount)) {
+      return true;
+    }
+    return false;
+  }
 
   return (
     <div>
