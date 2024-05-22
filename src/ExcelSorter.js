@@ -157,16 +157,28 @@ function ExcelSorter() {
           }
         }
 
+        /* 交通費に分類される経路の判定 */
         //出勤日数の半分以上が通勤費になっているか(通勤ルートで割ることで日数を出す)
         if ((commutingEntries.length / typeEntries.length) >= (commutingEntries.length / typeEntries.length) / 2) {
 
-          //同じ経路内で要素の変化がないか判定
+          //同じ経路内で要素の変化がないか判定（「金額」「片道・往復」「目的地」「交通機関」が区間内で同じか）
           if (typeEntries.every(route => allRouteEqualCheck(route))) {
-            status = 'OK';
+
+            //金額が大きすぎたり && 低すぎないか判定
+            if (commutingEntries.every(route => route.amount <= 1000) &&
+              commutingEntries.every(route => route.amount >= 410)) {
+              status = 'OK';
+            }
+            else {
+              console.log("値段の大きさが水準から出ています");
+              status = '注意';
+            }
           } else {
+            console.log("同じ経路内で異なる項目があります");
             status = '問題あり';
           }
         } else {
+          console.log("出勤日数が半分以上の制約を満たしていません");
           status = '問題あり';
         }
 
@@ -204,7 +216,6 @@ function ExcelSorter() {
    * @returns 
    */
   const allRouteEqualCheck = (array) => {
-
     // すべてのデータのすべての要素を比較
     if (array.every(entry => entry.boardingStation === array[0].boardingStation) &&
       array.every(entry => entry.alightingStation === array[0].alightingStation) &&
