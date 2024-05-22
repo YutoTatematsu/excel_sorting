@@ -1,7 +1,11 @@
+/* 全体設定 */
 .container {
+    /* フォント設定 */
     font-family: Arial, sans-serif;
+    /* サイトの外側に余白を入れる */
     padding: 20px;
 }
+
 
 /* ドロップ場所 */
 .dropzone {
@@ -15,106 +19,160 @@
     text-align: center;
     /* 下のコンテンツとの距離 */
     margin-bottom: 20px;
-    /*  */
+    /* マウスカーソルを変化（ポインターに変更） */
     cursor: pointer;
 }
 
+/* ドロップファイルリスト */
 .file-list {
+    /* コンテンツの下に余白を作る */
     margin-bottom: 20px;
+    /* コンテンツの幅 */
     width: 100%;
+    /* テーブルの境界線を1つにする */
     border-collapse: collapse;
 }
 
 .file-list th,
 .file-list td {
+    /* テーブルのセルに1ピクセルの境界線を設定 */
     border: 1px solid #ccc;
+    /* セルの内側の余白 */
     padding: 10px;
+    /* テーブルのセル内のテキストを左揃えに設定 */
     text-align: left;
 }
 
+/*ドロップしたファイルの個別削除ボタン */
 .remove-button {
+    /* ボタン背景 */
     background-color: #ff4d4d;
+    /* ボーダーをなくす（ボタンの縁取りのようなもの） */
     border: none;
+    /* 中身の文字の色 */
     color: white;
+    /* 中身の文字との余白 */
     padding: 5px 10px;
+    /* マウスカーソルを変化（ポインターに変更） */
     cursor: pointer;
 }
 
+
 .controls {
+    /* コンテンツの下側に余白を作成 */
     margin-bottom: 20px;
 }
 
 .control-button {
+    /* 実行ボタンのために右に余白を作る */
     margin-right: 10px;
+    /* 文字の上下左右に余白を作る（ボタン背景が伸びる） */
     padding: 10px 20px;
+    /* ボタン背景色 */
     background-color: #007bff;
+    /* 文字色 */
     color: white;
+    /* ボーダーをなくす（縁取りのようなものをなくす） */
     border: none;
+    /* マウスカーソルを変化（ポインターに変更） */
     cursor: pointer;
 }
 
+/* カーソルが重なっているとき */
 .control-button:hover {
+    /* ボタン背景を変える */
     background-color: #0056b3;
 }
 
 .filter {
+    /* コンテンツの下に余白を作る（いらないかも） */
     margin-bottom: 20px;
 }
 
+/* フィルターの選択欄 */
 .filter select {
+    /* コンテンツ左に余白を入れる */
     margin-left: 10px;
+    /* 文字と枠の間に余白を入れる */
     padding: 5px;
 }
 
 .sorted-files {
+    /* コンテンツの上に余白を作る（いらないかも） */
     margin-top: 20px;
 }
 
+/* 仕分け後ファイルリスト */
 .sorted-file {
-    margin-bottom: 20px;
+    /* コンテンツ下に余白を入れる */
+    margin-bottom: 10px;
+    /* ファイルごとに線で囲う */
     border: 1px solid #ccc;
+    /* ボタンの角を丸める */
     border-radius: 5px;
+    /* 中の文字がはみ出ないようにする */
     overflow: hidden;
 }
 
 .file-header {
+    /* ファイル欄の背景色 */
     background-color: #f5f5f5;
+    /* 文字と枠の間の余白 */
     padding: 10px;
+    /* マウスカーソルを変化（ポインターに変更） */
     cursor: pointer;
+    /* マージンをなくす（いらないかも） */
     margin: 0;
+    /* フレックスコンテナに設定　子要素をフレックスアイテムとして配置 */
     display: flex;
+    /* フレックスアイテムを均等に配置し、間隔を最大化 */
     justify-content: space-between;
+    /* フレックスアイテムを縦方向に中央揃えにする */
     align-items: center;
 }
 
 .file-header span {
+    /* span要素をインラインブロック要素に変更 */
     display: inline-block;
 }
 
+/* 仕分け後ファイルの名前 */
 .file-name {
+    /* フレックスアイテムの成長率を1に設定し、残りのスペースを埋める */
     flex-grow: 1;
+    /* 右側に余白を入れる */
     padding-right: 20px;
+    /* テキストの折り返しを禁止 */
     white-space: nowrap;
+    /* コンテンツが領域外にはみ出した際に非表示にする */
     overflow: hidden;
+    /* コンテンツが領域外にはみ出した際に省略記号（...）で表示 */
     text-overflow: ellipsis;
 }
 
 .file-status {
+    /* テキストの折り返しを禁止 */
     white-space: nowrap;
 }
 
 .file-table {
+    /* 要素の幅の設定 */
     width: 100%;
+    /* テーブル境界線を結合する */
     border-collapse: collapse;
 }
 
+/* 仕分け後ファイルの詳細データ */
 .file-table th,
 .file-table td {
+    /* テーブルのセルに境界線を設定 */
     border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
+    /* テーブルのセルの内側の余白設定 */
+    padding: 3px;
 }
 
+/* 仕分け後ファイルの詳細データ */
 .file-table th {
+    /* 背景色変更 */
     background-color: #f5f5f5;
 }
