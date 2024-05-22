@@ -3,12 +3,19 @@
     padding: 20px;
 }
 
+/* ドロップ場所 */
 .dropzone {
-    width: 100%;
+    /* 範囲の横幅 */
+    width: 95%;
+    /* 内側の余白 */
     padding: 20px;
+    /* 背景色 */
     border: 2px dashed #ccc;
+    /* 内部テキストの場所 */
     text-align: center;
+    /* 下のコンテンツとの距離 */
     margin-bottom: 20px;
+    /*  */
     cursor: pointer;
 }
 
