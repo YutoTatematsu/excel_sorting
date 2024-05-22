@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
+import './ExcelSorter.css';
 
 function ExcelSorter() {
   const [files, setFiles] = useState([]);
   const [sortedFiles, setSortedFiles] = useState([]);
-  const [status, setStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [openFiles, setOpenFiles] = useState({});
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -19,7 +21,8 @@ function ExcelSorter() {
   const handleReset = () => {
     setFiles([]);
     setSortedFiles([]);
-    setStatus('');
+    setFilterStatus('all');
+    setOpenFiles({});
   };
 
   const handleExecute = async () => {
@@ -40,7 +43,6 @@ function ExcelSorter() {
         const worksheet = workbook.Sheets[sheetName];
         const range = XLSX.utils.decode_range(worksheet['!ref']);
 
-        //データ配列
         let dates = [];
         let boardingStations = [];
         let alightingStations = [];
@@ -50,32 +52,27 @@ function ExcelSorter() {
         let transportTypes = [];
         let amounts = [];
         let status = 'OK';
-        let commutingEntries = [];//通勤費をまとめる変数
-        let typeEntries = [[], []]; //通勤費の交通経路を記録する2次元配列（初期値として2つの空配列）
+        let commutingEntries = [];
+        let typeEntries = [[], []];
 
-        //データの取得
         for (let row = range.s.r; row <= range.e.r; row++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: 1 }); // B列のセル（B1という表示）
-          const cell = worksheet[cellAddress]; // B列のセルの記入内容
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: 1 });
+          const cell = worksheet[cellAddress];
 
-          //記入内容がある && 値が1以上
           if (cell && cell.v >= 1) {
-            //データを取得
-            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;    // C列（日付）
-            const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;// D列（乗車駅名）
-            const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;// F列（降車駅名）
-            const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;// G列（片道・往復）
-            const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;// H列（通勤・業務）
-            const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;// I列（目的地）
-            const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;// J列（使用交通機関）
-            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;  // K列（金額）
+            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;
+            const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;
+            const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;
+            const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;
+            const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;
+            const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;
+            const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;
+            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;
 
-            //データが記入されているか判定
             if (!c_Date || !d_SStation || !f_EStation || !g_TripType || !h_ExpenseTypes || !i_Destinations || !j_TransportType || !k_Money) {
               break;
             }
 
-            //データを追加
             dates.push(c_Date);
             boardingStations.push(d_SStation);
             alightingStations.push(f_EStation);
@@ -85,7 +82,6 @@ function ExcelSorter() {
             transportTypes.push(j_TransportType);
             amounts.push(k_Money);
 
-            //通勤費の判定に使うので別途記録
             if (h_ExpenseTypes === '通勤費') {
               let found = false;
 
@@ -124,7 +120,6 @@ function ExcelSorter() {
                 }]);
               }
 
-              //通勤費すべての配列に追加
               commutingEntries.push({
                 date: c_Date,
                 boardingStation: d_SStation,
@@ -139,15 +134,12 @@ function ExcelSorter() {
           }
         }
 
-        /* 通勤費判定 */
-        //「全体 / ルート数」が出勤日数の半分以上あるかどうか
-        if ((commutingEntries.length / typeEntries.length) >= Math.floor(expenseTypes.length / 2)) {
-
-          //同じルート内の項目に変化がないか
-          if (typeEntries.every(route => allRouteEqualCheck(route))) {
+        if (commutingEntries.length >= Math.floor(expenseTypes.length / 2)) {
+          const allRoutesValid = typeEntries.every(route => allRouteEqualCheck(route));
+          if (allRoutesValid) {
             status = 'OK';
           } else {
-            status = '問題あり';
+            status = '注意';
           }
         } else {
           status = '問題あり';
@@ -175,10 +167,6 @@ function ExcelSorter() {
     setFiles(newFiles);
   };
 
-  /** 配列内のすべての項目が同じ場合trueを返す
-   * @param {通勤ルート配列} array 
-   * @returns 
-   */
   const allRouteEqualCheck = (array) => {
     if (
       array.every(entry => entry.boardingStation === array[0].boardingStation) &&
@@ -187,69 +175,108 @@ function ExcelSorter() {
       array.every(entry => entry.expenseType === array[0].expenseType) &&
       array.every(entry => entry.destination === array[0].destination) &&
       array.every(entry => entry.transportType === array[0].transportType) &&
-      array.every(entry => entry.amount === array[0].amount)) {
+      array.every(entry => entry.amount === array[0].amount)
+    ) {
       return true;
     }
     return false;
-  }
+  };
+
+  const filteredFiles = sortedFiles.filter(file => {
+    if (filterStatus === 'all') return true;
+    return file.status === filterStatus;
+  });
+
+  const toggleFileOpen = (index) => {
+    setOpenFiles(prevState => ({
+      ...prevState,
+      [index]: !prevState[index]
+    }));
+  };
+
+  const formatDate = (excelDate) => {
+    const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+    const month = jsDate.getMonth() + 1;
+    const day = jsDate.getDate();
+    return `${month}/${day}`;
+  };
 
   return (
-    <div>
-      <div
-        onDrop={handleDrop}
-        onDragOver={(event) => event.preventDefault()}
-        style={{ width: '300px', height: '300px', border: '1px dashed #ccc' }}
-      >
-        エクセルファイルをドロップしてください
+    <div className="container">
+      <div className="dropzone" onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
+        ドラッグ & ドロップでファイルを追加
       </div>
-      {files.length > 0 && (
-        <div>
-          <h2>ドロップされたファイル:</h2>
-          <ul>
-            {files.map((file, index) => (
-              <li key={index}>
-                {file.name}
-                <button onClick={() => handleRemoveFile(index)}>削除</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <button onClick={handleReset}>リセット</button>
-      <button onClick={handleExecute}>実行</button>
+      <table className="file-list">
+        <thead>
+          <tr>
+            <th>ファイル名</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {files.map((file, index) => (
+            <tr key={index} className="file-item">
+              <td className="file-name">{file.name}</td>
+              <td>
+                <button className="remove-button" onClick={() => handleRemoveFile(index)}>削除</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="controls">
+        <button className="control-button" onClick={handleReset}>リセット</button>
+        <button className="control-button" onClick={handleExecute}>実行</button>
+      </div>
+      <div className="filter">
+        <label>フィルタリング:
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="all">すべて</option>
+            <option value="OK">OK</option>
+            <option value="注意">注意</option>
+            <option value="問題あり">問題あり</option>
+          </select>
+        </label>
+      </div>
       {sortedFiles.length > 0 && (
-        <div>
-          {sortedFiles.map((file, fileIndex) => (
-            <div key={fileIndex}>
-              <h3>{file.name} - {file.status}</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>日付</th>
-                    <th>乗車駅</th>
-                    <th>降車駅</th>
-                    <th>片道・往復</th>
-                    <th>通勤・業務</th>
-                    <th>目的地</th>
-                    <th>交通機関種類</th>
-                    <th>金額</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {file.dates.map((_, entryIndex) => (
-                    <tr key={entryIndex}>
-                      <td>{file.dates[entryIndex]}</td>
-                      <td>{file.boardingStations[entryIndex]}</td>
-                      <td>{file.alightingStations[entryIndex]}</td>
-                      <td>{file.tripTypes[entryIndex]}</td>
-                      <td>{file.expenseTypes[entryIndex]}</td>
-                      <td>{file.destinations[entryIndex]}</td>
-                      <td>{file.transportTypes[entryIndex]}</td>
-                      <td>{file.amounts[entryIndex]}</td>
+        <div className="sorted-files">
+          {filteredFiles.map((file, index) => (
+            <div key={index} className="sorted-file">
+              <div className="file-header" onClick={() => toggleFileOpen(index)}>
+                <span className="file-name">{file.name}</span>
+                <span className="file-status">{file.status}</span>
+                <span>{openFiles[index] ? '▲' : '▼'}</span>
+              </div>
+              {openFiles[index] && (
+                <table className="file-table">
+                  <thead>
+                    <tr>
+                      <th>日付</th>
+                      <th>乗車駅</th>
+                      <th>降車駅</th>
+                      <th>片道・往復</th>
+                      <th>通勤・業務</th>
+                      <th>目的地</th>
+                      <th>交通機関種類</th>
+                      <th>金額</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {file.dates.map((date, entryIndex) => (
+                      <tr key={entryIndex}>
+                        <td>{formatDate(date)}</td>
+                        <td>{file.boardingStations[entryIndex]}</td>
+                        <td>{file.alightingStations[entryIndex]}</td>
+                        <td>{file.tripTypes[entryIndex]}</td>
+                        <td>{file.expenseTypes[entryIndex]}</td>
+                        <td>{file.destinations[entryIndex]}</td>
+                        <td>{file.transportTypes[entryIndex]}</td>
+                        <td>{file.amounts[entryIndex]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           ))}
         </div>
