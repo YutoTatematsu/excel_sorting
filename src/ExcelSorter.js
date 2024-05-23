@@ -8,9 +8,15 @@ function ExcelSorter() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [openFiles, setOpenFiles] = useState({});
 
+  /**ファイルドロップ時の処理
+   * @param {*} event 
+   */
   const handleDrop = (event) => {
+    // イベントのデフォルト動作をキャンセル（必要？）
     event.preventDefault();
+    // ドロップされたファイルの一覧を取得し配列に代入
     const droppedFiles = Array.from(event.dataTransfer.files);
+    // エクセルかどうか判定 && 同名ファイルでない判定
     const excelFiles = droppedFiles.filter(file =>
       (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) &&
       !files.some(existingFile => existingFile.name === file.name)
@@ -24,18 +30,27 @@ function ExcelSorter() {
     setFiles([...files, ...excelFiles]);
   };
 
+  /**リセットボタンを押したときの処理
+   */
   const handleReset = () => {
+    // 配列などの読み込んだデータを初期化
     setFiles([]);
     setSortedFiles([]);
     setFilterStatus('all');
     setOpenFiles({});
   };
 
+  /** 実行ボタンを押したときの処理
+   */
   const handleExecute = async () => {
-    const sorted = await Promise.all(files.map(async (file) => {
+    // 非同期で行うためPromise.allすべての非同期処理が完了するのを待つ
+    const sorted = await Promise.all(files.map(async (file) => {// 配列の各要素に対して非同期の関数を実行
+      // ファイルの読み込み＆処理関数を起動
       const result = await checkExcelFile(file);
+      // 上の結果を result に格納
       return { name: file.name, ...result };
     }));
+    // 配列をコンポーネントの状態に設定
     setSortedFiles(sorted);
   };
 
@@ -73,16 +88,16 @@ function ExcelSorter() {
           //B列の中身が数値かつ1以上なら
           if (cell && cell.v >= 1) {
             //データを取得
-            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;
-            const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;
-            const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;
-            const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;
-            const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;
-            const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;
-            const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;
-            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;
+            const c_Date = worksheet[XLSX.utils.encode_cell({ r: row, c: 2 })]?.v;//日付
+            const d_SStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 3 })]?.v;//乗車駅
+            const f_EStation = worksheet[XLSX.utils.encode_cell({ r: row, c: 5 })]?.v;//降車駅
+            const g_TripType = worksheet[XLSX.utils.encode_cell({ r: row, c: 6 })]?.v;//片道・往復
+            const h_ExpenseTypes = worksheet[XLSX.utils.encode_cell({ r: row, c: 7 })]?.v;//通勤費か業務交通費
+            const i_Destinations = worksheet[XLSX.utils.encode_cell({ r: row, c: 8 })]?.v;//目的地
+            const j_TransportType = worksheet[XLSX.utils.encode_cell({ r: row, c: 9 })]?.v;//通勤手段
+            const k_Money = worksheet[XLSX.utils.encode_cell({ r: row, c: 10 })]?.v;//金額
 
-            //データがなかった場合
+            //データがなかった場合（記入漏れ判別未導入）
             if (!c_Date || !d_SStation || !f_EStation || !g_TripType || !h_ExpenseTypes || !i_Destinations || !j_TransportType || !k_Money) {
               //読み込み終了
               break;
@@ -183,6 +198,7 @@ function ExcelSorter() {
         }
 
         // リゾルブで非同期処理のデータを返す（resolveはPromiseを完了させ、その結果を返すための関数とのこと）
+        // returnのようなもの
         resolve({
           status,
           dates,
@@ -241,16 +257,29 @@ function ExcelSorter() {
     return file.status === filterStatus;
   });
 
+  /**判定後の要素がクリックされたとき
+   * @param {クリックされた要素番号} index 
+   */
   const toggleFileOpen = (index) => {
+    // 状態更新用の変数を書き換え
     setOpenFiles(prevState => ({
+      // 前の状態のprevStateを受け取り新しい状態を返す
       ...prevState,
+      // 開閉フラグを反転させる
       [index]: !prevState[index]
     }));
   };
 
+  /**日付表示処理
+   * @param {エクセルデータ} excelDate 
+   * @returns 
+   */
   const formatDate = (excelDate) => {
+    // 日付を直す
     const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+    // 月
     const month = jsDate.getMonth() + 1;
+    // 日
     const day = jsDate.getDate();
     return `${month}/${day}`;
   };
